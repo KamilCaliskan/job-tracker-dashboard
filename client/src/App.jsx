@@ -1,44 +1,64 @@
-import { useEffect, useState } from "react";
-import { getJobs, addJob, deleteJob, updateJob } from "./services/jobService";
+import React, { useState, useEffect } from "react";
 import JobForm from "./components/JobForm";
 import JobList from "./components/JobList";
+import { getJobsFromAPI, addJobToAPI, updateJobInAPI, deleteJobFromAPI } from "./api/jobs";
 
-function App() {
+const App = () => {
     const [jobs, setJobs] = useState([]);
+    const [job, setJob] = useState({ title: "", company: "", status: "pending" });
 
+    // Load jobs once when component mounts
     useEffect(() => {
-        getJobs().then(setJobs);
+        loadJobs();
     }, []);
 
-    const handleAdd = async (job) => {
+    const loadJobs = async () => {
         try {
-            const newJob = await addJob(job);
-            setJobs(prev => [newJob, ...prev]);
+            const data = await getJobsFromAPI();
+            setJobs(data);
         } catch (err) {
-            console.error("Failed to add job:", err);
+            console.error("Failed to load jobs:", err);
         }
     };
 
-    const handleDelete = async (id) => {
-        try {
-            await deleteJob(id);
-            setJobs(prev => prev.filter(job => job._id !== id));
-        } catch (err) {
-            console.error("Failed to delete job:", err);
-        }
+    // Add new job
+    const handleAddJob = async (newJob) => {
+        const created = await addJobToAPI(newJob);
+        setJobs((prev) => [...prev, created]); // refresh list
     };
 
-    const handleEdit = (id, updatedJob) => {
-        setJobs(prev => prev.map(job => (job._id === id ? updatedJob : job)));
+    // Update existing job
+    const handleUpdateJob = async (updatedJob) => {
+        const updated = await updateJobInAPI(updatedJob);
+        setJobs((prev) =>
+        prev.map((j) => (j._id === updated._id ? updated : j))
+        );
+        setJob({ title: "", company: "", status: "pending" });
+    };
+
+    // Delete job
+    const handleDeleteJob = async (id) => {
+        await deleteJobFromAPI(id);
+        setJobs((prev) => prev.filter((j) => j._id !== id));
     };
 
     return (
-        <div className="container mx-auto p-4 max-w-2xl">
-        <h1 className="text-2xl font-bold mb-4 text-center">Job Tracker</h1>
-        <JobForm onAdd={handleAdd} />
-        <JobList jobs={jobs} onDelete={handleDelete} onEdit={handleEdit} />
+        <div className="p-6 max-w-3xl mx-auto">
+        <h1 className="text-2xl font-bold mb-4">Job Tracker Dashboard</h1>
+        <JobForm
+        job={job}
+        setJob={setJob}
+        handleAddJob={handleAddJob}
+        handleUpdateJob={handleUpdateJob}
+        />
+        <JobList
+        jobs={jobs}
+        job={job}
+        setJob={setJob}
+        deleteJobFromAPI={handleDeleteJob}
+        />
         </div>
     );
-}
+};
 
 export default App;
