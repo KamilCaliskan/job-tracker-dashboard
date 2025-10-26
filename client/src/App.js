@@ -1,28 +1,31 @@
-import React, { useState, useEffect } from "react";
+import React, { useContext } from "react";
+import { JobProvider, JobContext } from "./context/JobContext"; // 🔹 Context import
 import JobList from "./components/JobList";
-import JobForm from "./components/JobForm";
+import AddJobForm from "./components/AddJobForm";
 import Dashboard from "./components/Dashboard";
-import { getJobs, createJobAPI, updateJobAPI, deleteJobFromAPI } from "./services/jobService";
+import Alert from "./components/ui/Alert"; // 🔹 Reusable alert component
 
-function App() {
-  const [jobs, setJobs] = useState([]);
-  const [job, setJob] = useState({ title: "", company: "", status: "applied" });
-
-  useEffect(() => {
-    const fetchJobs = async () => {
-      const data = await getJobs();
-      setJobs(data);
-    };
-    fetchJobs();
-  }, []);
+function AppContent() {
+  const { jobs, error, message, setError, setMessage } = useContext(JobContext);
 
   return (
-    <div className="p-4">
+    <div className="max-w-3xl mx-auto p-6">
+    <h1 className="text-2xl font-bold mb-4">Job Tracker Dashboard</h1>
+
+    {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
+    {message && <Alert type="success" message={message} onClose={() => setMessage(null)} />}
+
     <Dashboard jobs={jobs} />
-    <JobForm jobs={jobs} setJobs={setJobs} job={job} setJob={setJob} createJobAPI={createJobAPI} updateJobAPI={updateJobAPI} />
-    <JobList jobs={jobs} setJobs={setJobs} deleteJobFromAPI={deleteJobFromAPI} setJob={setJob} />
+    <AddJobForm />
+    <JobList />
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <JobProvider>
+    <AppContent />
+    </JobProvider>
+  );
+}
