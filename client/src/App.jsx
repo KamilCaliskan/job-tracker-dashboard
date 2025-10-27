@@ -4,8 +4,8 @@ import JobList from "./components/JobList";
 import { getJobsFromAPI, addJobToAPI, updateJobInAPI, deleteJobFromAPI } from "./api/jobs";
 
 const App = () => {
-    const [jobs, setJobs] = useState([]);
-    const [job, setJob] = useState({ title: "", company: "", status: "pending" });
+    const [jobs, setJobs] = useState([]); // all jobs
+    const [job, setJob] = useState({ title: "", company: "", status: "pending" }); // current/edit job
 
     // Load jobs once when component mounts
     useEffect(() => {
@@ -14,8 +14,8 @@ const App = () => {
 
     const loadJobs = async () => {
         try {
-            const data = await getJobsFromAPI();
-            setJobs(data);
+            const data = await getJobsFromAPI(); // fetch all jobs from backend
+            setJobs(data); // update state
         } catch (err) {
             console.error("Failed to load jobs:", err);
         }
@@ -24,22 +24,22 @@ const App = () => {
     // Add new job
     const handleAddJob = async (newJob) => {
         const created = await addJobToAPI(newJob);
-        setJobs((prev) => [...prev, created]); // refresh list
+        setJobs((prev) => [...prev, created]); // append to state
     };
 
     // Update existing job
     const handleUpdateJob = async (updatedJob) => {
         const updated = await updateJobInAPI(updatedJob);
         setJobs((prev) =>
-        prev.map((j) => (j._id === updated._id ? updated : j))
+        prev.map((j) => (j._id === updated._id ? updated : j)) // replace updated job
         );
-        setJob({ title: "", company: "", status: "pending" });
+        setJob({ title: "", company: "", status: "pending" }); // reset form
     };
 
     // Delete job
     const handleDeleteJob = async (id) => {
         await deleteJobFromAPI(id);
-        setJobs((prev) => prev.filter((j) => j._id !== id));
+        setJobs((prev) => prev.filter((j) => j._id !== id)); // remove from state
     };
 
     return (
