@@ -6,7 +6,7 @@ const JobList = ({ jobs, setJobs, deleteJobFromAPI, setJob, job }) => {
             await deleteJobFromAPI(id);
             setJobs(prev => prev.filter(j => j._id !== id));
         } catch (err) {
-            console.error("Failed to delete job:", err);
+            console.error("❌ Failed to delete job:", err);
         }
     };
 
@@ -16,35 +16,31 @@ const JobList = ({ jobs, setJobs, deleteJobFromAPI, setJob, job }) => {
     };
 
     return (
-        <div className="space-y-2">
-        {jobs.map(j => (
+        <div className="space-y-3">
+        {jobs.map((j) => (
             <div
             key={j._id}
-            className={`p-2 border rounded flex justify-between items-center
-                ${job._id === j._id ? "bg-yellow-100 border-yellow-400" : "bg-white"}`}
-                >
-                <div>
-                <strong>{j.title}</strong> – {j.company}
-                <span className="text-sm text-gray-600 ml-2">({j.status})</span>
-                </div>
-
-                <div className="space-x-2">
-                <button
-                onClick={() => handleEdit(j._id)}
-                className="bg-blue-500 text-white px-2 py-1 rounded"
-                >
-                Edit
-                </button>
-                <button
-                onClick={() => handleDelete(j._id)}
-                className="bg-red-500 text-white px-2 py-1 rounded"
-                >
-                Delete
-                </button>
-                </div>
-                </div>
+            className={`flex justify-between items-center border rounded-lg p-3 shadow-sm hover:shadow transition ${
+                job._id === j._id ? "bg-yellow-50 border-yellow-300" : "bg-white"
+            }`}
+            >
+            <div>
+            <h3 className="font-medium">{j.title}</h3>
+            <p className="text-sm text-gray-500">{j.company}</p>
+            </div>
+            <div className="space-x-2">
+            <button onClick={() => onEdit(j)} className="text-blue-600 hover:underline">
+            Edit
+            </button>
+            <button onClick={() => onDelete(j._id)} className="text-red-600 hover:underline">
+            Delete
+            </button>
+            </div>
+            </div>
         ))}
         </div>
+
+
     );
 };
 
