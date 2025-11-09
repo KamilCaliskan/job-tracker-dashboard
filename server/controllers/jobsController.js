@@ -1,69 +1,49 @@
-const Job = require("../models/Job");
+import fs from "fs-extra";
+import path from "path";
 
-// ✅ Create new job with validation
-exports.createJob = async (req, res, next) => {
+const filePath = path.resolve("models/jobs.json");
+
+export const getJobs = async (req, res) => {
     try {
-        const { title, company, status } = req.body;
-        if (!title || !company) {
-            const err = new Error("Title and company are required.");
-            err.status = 400;
-            throw err;
-        }
-
-        const job = await Job.create({ title, company, status });
-        res.status(201).json(job);
-    } catch (error) {
-        next(error);
+        const data = await fs.readJson(filePath);
+        res.json(data);
+    } catch {
+        res.status(500).json({ error: "Failed to read data" });
     }
 };
 
-// ✅ Get all jobs
-exports.getJobs = async (req, res, next) => {
+export const addJob = async (req, res) => {
     try {
-        const jobs = await Job.find().sort({ createdAt: -1 });
-        res.json(jobs);
-    } catch (error) {
-        next(error);
+        const jobs = await fs.readJson(filePath);
+        const newJob = { id: Date.now(), ...req.body };
+        jobs.push(newJob);
+        await fs.writeJson(filePath, jobs);
+        res.status(201).json(newJob);
+    } catch {
+        res.status(500).json({ error: "Failed to add job" });
     }
 };
 
-// ✅ Update job with validation
-exports.updateJob = async (req, res, next) => {
+export const updateJob = async (req, res) => {
     try {
-        const { title, company, status } = req.body;
-        if (!title || !company) {
-            const err = new Error("Title and company are required.");
-            err.status = 400;
-            throw err;
-        }
-
-        const job = await Job.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-        });
-
-        if (!job) {
-            const err = new Error("Job not found.");
-            err.status = 404;
-            throw err;
-        }
-
-        res.json(job);
-    } catch (error) {
-        next(error);
+        const jobs = await fs.readJson(filePath);
+        const idx = jobs.findIndex((j) => j.id === parseInt(req.params.id));
+        if (idx === -1) return res.status(404).json({ error: "Not found" });
+        jobs[idx] = { ...jobs[idx], ...req.body };
+        await fs.writeJson(filePath, jobs);
+        res.json(jobs[idx]);
+    } catch {
+        res.status(500).json({ error: "Failed to update job" });
     }
 };
 
-// ✅ Delete job
-exports.deleteJob = async (req, res, next) => {
+export const deleteJob = async (req, res) => {
     try {
-        const job = await Job.findByIdAndDelete(req.params.id);
-        if (!job) {
-            const err = new Error("Job not found.");
-            err.status = 404;
-            throw err;
-        }
-        res.json({ message: "Job deleted successfully." });
-    } catch (error) {
-        next(error);
+        let jobs = await fs.readJson(filePath);
+        jobs = jobs.filter((j) => j.id !== parseInt(req.params.id));
+        await fs.writeJson(filePath, jobs);
+        res.json({ success: true });
+    } catch {
+        res.status(500).json({ error: "Failed to delete job" });
     }
 };
