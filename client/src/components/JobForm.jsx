@@ -1,59 +1,55 @@
-import { useState } from "react";
+import React from "react";
 
-function JobForm({ onSubmit }) {
-    const [job, setJob] = useState({
-        title: "",
-        company: "",
-        status: "pending",
-    });
-
+const JobForm = ({ job, setJob, onSubmit }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (!job.title?.trim() || !job.company?.trim()) return;
         onSubmit(job);
-        setJob({ title: "", company: "", status: "pending" });
     };
 
     return (
-        <form className="space-y-4" onSubmit={handleSubmit}>
-
-        {/* Title input */}
+        <form onSubmit={handleSubmit} className="bg-gray-50 p-4 rounded-lg border">
+        <div className="mb-3">
+        <label className="block text-xs font-medium text-gray-600 mb-1">Title</label>
         <input
-        type="text"
-        placeholder="Job Title"
         value={job.title}
         onChange={(e) => setJob({ ...job, title: e.target.value })}
-        className="border rounded-lg px-3 py-2 w-full"
+        className="w-full border rounded-md px-3 py-2 text-sm"
+        placeholder="Frontend Developer"
         />
+        </div>
 
-        {/* Company input */}
+        <div className="mb-3">
+        <label className="block text-xs font-medium text-gray-600 mb-1">Company</label>
         <input
-        type="text"
-        placeholder="Company"
         value={job.company}
         onChange={(e) => setJob({ ...job, company: e.target.value })}
-        className="border rounded-lg px-3 py-2 w-full"
+        className="w-full border rounded-md px-3 py-2 text-sm"
+        placeholder="Acme Ltd."
         />
+        </div>
 
-        {/* Status input */}
+        <div className="mb-4">
+        <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
         <select
         value={job.status}
         onChange={(e) => setJob({ ...job, status: e.target.value })}
-        className="border rounded-lg px-3 py-2 w-full"
+        className="w-full border rounded-md px-3 py-2 text-sm"
         >
-        <option value="pending">Pending</option>
-        <option value="interview">Interview</option>
-        <option value="rejected">Rejected</option>
-        <option value="offer">Offer</option>
+        <option value="Pending">Pending</option>
+        <option value="Interview">Interview</option>
+        <option value="Rejected">Rejected</option>
         </select>
+        </div>
 
         <button
         type="submit"
-        className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+        className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition font-semibold"
         >
-        Save
+        {job.id || job._id ? "Update Job" : "Add Job"}
         </button>
         </form>
     );
-}
+};
 
 export default JobForm;
