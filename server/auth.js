@@ -2,11 +2,10 @@ import jwt from "jsonwebtoken";
 import fs from "fs-extra";
 import bcrypt from "bcryptjs";
 
-const SECRET = "My23SuperScrtRandomKey123!@#
-";
-
+const SECRET = "My23SuperScrtRandomKey123!@#";
 const usersFile = "./data/users.json";
 
+// Login endpoint
 export const login = async (req, res) => {
     const { email, password } = req.body;
     const users = await fs.readJSON(usersFile);
@@ -17,20 +16,31 @@ export const login = async (req, res) => {
     const valid = bcrypt.compareSync(password, user.password);
     if (!valid) return res.status(401).json({ message: "Invalid credentials" });
 
-    const token = jwt.sign({ id: user.id, email: user.email }, SECRET, { expiresIn: "1h" });
-    res.json({ token });
+    // ✅ Include role in JWT payload
+    const token = jwt.sign(
+        { id: user.id, email: user.email, role: user.role },
+        SECRET,
+        { expiresIn: "1h" }
+    );
+
+    res.json({
+        token,
+        user: { id: user.id, email: user.email, role: user.role }
+    });
 };
 
+// Auth middleware
 export const authMiddleware = (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ message: "No token" });
 
     const token = authHeader.split(" ")[1];
+
     try {
         const decoded = jwt.verify(token, SECRET);
-        req.user = decoded;
+        req.user = decoded; // ✅ role now included
         next();
-    } catch (err) {
+    } catch {
         res.status(401).json({ message: "Invalid token" });
     }
 };
