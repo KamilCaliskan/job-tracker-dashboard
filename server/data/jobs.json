@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "id": 1,
+    "title": "Frontend Developer",
+    "company": "Google",
+    "status": "applied",
+    "userId": 1
+  },
+  {
+    "id": 2,
+    "title": "Backend Developer",
+    "company": "Amazon",
+    "status": "interview",
+    "userId": 1
+  }
+]
