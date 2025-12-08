@@ -1,188 +1,135 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import fs from "fs-extra";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-
-dotenv.config();
+const express = require("express");
+const cors = require("cors");
+const fs = require("fs-extra");
+const path = require("path");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// -----------------------------
-// FILE PATHS
-// -----------------------------
-const usersPath = "./data/users.json";
-const jobsPath = "./data/jobs.json";
+const dataDir = path.join(__dirname, "data");
+const jobsPath = path.join(dataDir, "jobs.json");
+const usersPath = path.join(dataDir, "users.json");
 
-// Ensure JSON files exist
-await fs.ensureFile(usersPath);
-await fs.ensureFile(jobsPath);
-
-if (!(await fs.readFile(usersPath, "utf8"))) {
-    await fs.writeJSON(usersPath, []);
+// Initialize data
+async function initDataFiles() {
+    await fs.ensureDir(dataDir);
+    if (!(await fs.pathExists(jobsPath))) {
+        await fs.writeJson(jobsPath, []);
+    }
+    if (!(await fs.pathExists(usersPath))) {
+        await fs.writeJson(usersPath, [
+            {
+                id: 1,
+                email: "admin@example.com",
+                password: "admin123",
+                role: "admin"
+            }
+        ]);
+    }
 }
 
-if (!(await fs.readFile(jobsPath, "utf8"))) {
-    await fs.writeJSON(jobsPath, []);
-}
-
-// -----------------------------
-// AUTH MIDDLEWARE
-// -----------------------------
-export const authMiddleware = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader)
-        return res.status(401).json({ message: "No token provided" });
-
-    const token = authHeader.split(" ")[1];
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded; // Attach user
+// SIMPLE AUTH - NO JWT
+const authMiddleware = (req, res, next) => {
+    const token = req.header("Authorization");
+    if (token === "Bearer admin-token") {
+        req.user = { id: 1, email: "admin@example.com", role: "admin" };
         next();
-    } catch (err) {
-        return res.status(401).json({ message: "Invalid or expired token" });
+    } else {
+        res.status(401).json({ error: "Invalid token" });
     }
 };
 
-// -----------------------------
-// AUTH ROUTES
-// -----------------------------
-
-// LOGIN
+// Login
 app.post("/api/auth/login", async (req, res) => {
     const { email, password } = req.body;
-
-    const users = await fs.readJSON(usersPath);
-    const user = users.find((u) => u.email === email);
-
-    if (!user)
-        return res.status(400).json({ message: "Invalid credentials" });
-
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch)
-        return res.status(400).json({ message: "Invalid credentials" });
-
-    const token = jwt.sign(
-        {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
-    );
-
-    res.json({
-        token,
-        user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-        },
-    });
+    const users = await fs.readJson(usersPath);
+    const user = users.find(u => u.email === email && u.password === password);
+    
+    if (user) {
+        res.json({ 
+            token: "admin-token",
+            user: { id: user.id, email: user.email, role: user.role }
+        });
+    } else {
+        res.status(401).json({ error: "Invalid credentials" });
+    }
 });
 
-// REGISTER (optional, admin only)
-// You can enable this later.
-// --------------------------------------------
-
-
-// -----------------------------
-// USER PROFILE (Step 17.5)
-// -----------------------------
-app.get("/api/auth/me", authMiddleware, (req, res) => {
-    const { id, name, email, role } = req.user;
-
-    res.json({ id, name, email, role });
-});
-
-// -----------------------------
-// PUBLIC ROUTE — LIST ALL JOBS
-// -----------------------------
-app.get("/api/jobs", async (req, res) => {
+// Job routes
+app.get("/api/jobs", authMiddleware, async (req, res) => {
     try {
-        const jobs = await fs.readJSON(jobsPath);
+        const jobs = await fs.readJson(jobsPath);
         res.json(jobs);
     } catch (err) {
-        res.status(500).json({ message: "Failed to load jobs" });
+        res.status(500).json({ error: "Failed to load jobs" });
     }
 });
 
-// -----------------------------
-// CREATE JOB (Protected)
-// -----------------------------
 app.post("/api/jobs", authMiddleware, async (req, res) => {
     try {
-        const jobs = await fs.readJSON(jobsPath);
-
+        const jobs = await fs.readJson(jobsPath);
         const newJob = {
             id: Date.now(),
-         userId: req.user.id, // owner of the job
-         ...req.body,
+            title: req.body.title || "",
+            company: req.body.company || "",
+            status: req.body.status || "Pending",
+            createdAt: new Date().toISOString()
         };
-
         jobs.push(newJob);
-        await fs.writeJSON(jobsPath, jobs);
-
+        await fs.writeJson(jobsPath, jobs);
         res.status(201).json(newJob);
     } catch (err) {
-        res.status(500).json({ message: "Failed to add job" });
+        res.status(500).json({ error: "Failed to create job" });
     }
 });
 
-// -----------------------------
-// UPDATE JOB (Protected)
-// -----------------------------
 app.put("/api/jobs/:id", authMiddleware, async (req, res) => {
     try {
-        const jobs = await fs.readJSON(jobsPath);
-
-        // restrict editing to owner
-        const updatedJobs = jobs.map((job) =>
-        job.id === Number(req.params.id) &&
-        job.userId === req.user.id
-        ? { ...job, ...req.body }
-        : job
-        );
-
-        await fs.writeJSON(jobsPath, updatedJobs);
-
-        res.json({ message: "Job updated successfully" });
+        const jobs = await fs.readJson(jobsPath);
+        const jobId = parseInt(req.params.id);
+        const index = jobs.findIndex(j => j.id === jobId);
+        
+        if (index === -1) {
+            return res.status(404).json({ error: "Job not found" });
+        }
+        
+        jobs[index] = { ...jobs[index], ...req.body };
+        await fs.writeJson(jobsPath, jobs);
+        res.json(jobs[index]);
     } catch (err) {
-        res.status(500).json({ message: "Failed to update job" });
+        res.status(500).json({ error: "Failed to update job" });
     }
 });
 
-// -----------------------------
-// DELETE JOB (Protected)
-// -----------------------------
 app.delete("/api/jobs/:id", authMiddleware, async (req, res) => {
     try {
-        const jobs = await fs.readJSON(jobsPath);
-
-        const newJobs = jobs.filter(
-            (job) =>
-            job.id !== Number(req.params.id) ||
-            job.userId !== req.user.id
-        );
-
-        await fs.writeJSON(jobsPath, newJobs);
-
+        const jobs = await fs.readJson(jobsPath);
+        const jobId = parseInt(req.params.id);
+        const filteredJobs = jobs.filter(j => j.id !== jobId);
+        
+        if (filteredJobs.length === jobs.length) {
+            return res.status(404).json({ error: "Job not found" });
+        }
+        
+        await fs.writeJson(jobsPath, filteredJobs);
         res.json({ message: "Job deleted successfully" });
     } catch (err) {
-        res.status(500).json({ message: "Failed to delete job" });
+        res.status(500).json({ error: "Failed to delete job" });
     }
 });
 
-// -----------------------------
-// START SERVER
-// -----------------------------
-app.listen(5000, () => console.log("✅ Backend running on port 5000"));
+// Test
+app.get("/api/test", (req, res) => {
+    res.json({ message: "Server is working" });
+});
+
+// Start
+initDataFiles().then(() => {
+    const PORT = 5000;
+    app.listen(PORT, () => {
+        console.log(`✅ Server running on port ${PORT}`);
+        console.log(`🔐 Login: admin@example.com / admin123`);
+        console.log(`🔑 Fixed token: admin-token`);
+    });
+});

@@ -1,49 +1,71 @@
-import fs from "fs-extra";
-import path from "path";
+import Job from "../models/Job.js";
 
-const filePath = path.resolve("models/jobs.json");
-
+/**
+ * Get all jobs for the logged-in user
+ */
 export const getJobs = async (req, res) => {
     try {
-        const data = await fs.readJson(filePath);
-        res.json(data);
-    } catch {
-        res.status(500).json({ error: "Failed to read data" });
+        const jobs = await Job.find({ userId: req.user.id }).sort({ createdAt: -1 });
+        res.json(jobs);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch jobs" });
     }
 };
 
-export const addJob = async (req, res) => {
+/**
+ * Create new job
+ */
+export const createJob = async (req, res) => {
     try {
-        const jobs = await fs.readJson(filePath);
-        const newJob = { id: Date.now(), ...req.body };
-        jobs.push(newJob);
-        await fs.writeJson(filePath, jobs);
-        res.status(201).json(newJob);
-    } catch {
-        res.status(500).json({ error: "Failed to add job" });
+        const job = new Job({
+            ...req.body,
+            userId: req.user.id
+        });
+
+        const saved = await job.save();
+        res.status(201).json(saved);
+    } catch (err) {
+        res.status(400).json({ error: "Failed to create job" });
     }
 };
 
+/**
+ * Update job (only if owner)
+ */
 export const updateJob = async (req, res) => {
     try {
-        const jobs = await fs.readJson(filePath);
-        const idx = jobs.findIndex((j) => j.id === parseInt(req.params.id));
-        if (idx === -1) return res.status(404).json({ error: "Not found" });
-        jobs[idx] = { ...jobs[idx], ...req.body };
-        await fs.writeJson(filePath, jobs);
-        res.json(jobs[idx]);
-    } catch {
+        const updatedJob = await Job.findOneAndUpdate(
+            { _id: req.params.id, userId: req.user.id },
+            req.body,
+            { new: true }
+        );
+
+        if (!updatedJob) {
+            return res.status(404).json({ error: "Job not found or unauthorized" });
+        }
+
+        res.json(updatedJob);
+    } catch (err) {
         res.status(500).json({ error: "Failed to update job" });
     }
 };
 
+/**
+ * Delete job
+ */
 export const deleteJob = async (req, res) => {
     try {
-        let jobs = await fs.readJson(filePath);
-        jobs = jobs.filter((j) => j.id !== parseInt(req.params.id));
-        await fs.writeJson(filePath, jobs);
-        res.json({ success: true });
-    } catch {
+        const deleted = await Job.deleteOne({
+            _id: req.params.id,
+            userId: req.user.id
+        });
+
+        if (deleted.deletedCount === 0) {
+            return res.status(404).json({ error: "Job not found or unauthorized" });
+        }
+
+        res.json({ message: "Job deleted" });
+    } catch (err) {
         res.status(500).json({ error: "Failed to delete job" });
     }
 };

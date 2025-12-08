@@ -1,14 +1,1 @@
-[
-  {
-    "id": 1,
-    "email": "admin@example.com",
-    "password": "$2a$10$CwTycUXWue0Thq9StjUM0uJ8y8ePqG8jN.2r5Eoq2u1xkTqfQx7Ca",
-    "role": "admin"
-  },
-  {
-    "id": 2,
-    "email": "user@example.com",
-    "password": "$2a$10$CwTycUXWue0Thq9StjUM0uJ8ePqG8jN.2r5Eoq2u1xkTqfQx7Ca",
-    "role": "user"
-  }
-]
+[{"id":1,"email":"admin@example.com","password":"$2a$10$LxbJ9nuXOa28lGbCX6Tx1.Fk7c9gERLKHo5qIVcRRD4oswxVmAovq","role":"admin"}]
