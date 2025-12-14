@@ -11,25 +11,28 @@ const dataDir = path.join(__dirname, "data");
 const jobsPath = path.join(dataDir, "jobs.json");
 const usersPath = path.join(dataDir, "users.json");
 
-// Initialize data
+// Initialize data files
 async function initDataFiles() {
     await fs.ensureDir(dataDir);
+    
+    // Create jobs.json if missing
     if (!(await fs.pathExists(jobsPath))) {
         await fs.writeJson(jobsPath, []);
     }
+    
+    // Create users.json with plain text password
     if (!(await fs.pathExists(usersPath))) {
-        await fs.writeJson(usersPath, [
-            {
-                id: 1,
-                email: "admin@example.com",
-                password: "admin123",
-                role: "admin"
-            }
-        ]);
+        const users = [{
+            id: 1,
+            email: "admin@example.com",
+            password: "admin123",  // PLAIN TEXT
+            role: "admin"
+        }];
+        await fs.writeJson(usersPath, users);
     }
 }
 
-// SIMPLE AUTH - NO JWT
+// SIMPLE AUTH MIDDLEWARE
 const authMiddleware = (req, res, next) => {
     const token = req.header("Authorization");
     if (token === "Bearer admin-token") {
@@ -40,23 +43,36 @@ const authMiddleware = (req, res, next) => {
     }
 };
 
-// Login
+// --------------------------
+// AUTH ROUTES
+// --------------------------
+
+// LOGIN (plain text comparison)
 app.post("/api/auth/login", async (req, res) => {
-    const { email, password } = req.body;
-    const users = await fs.readJson(usersPath);
-    const user = users.find(u => u.email === email && u.password === password);
-    
-    if (user) {
-        res.json({ 
-            token: "admin-token",
-            user: { id: user.id, email: user.email, role: user.role }
-        });
-    } else {
-        res.status(401).json({ error: "Invalid credentials" });
+    try {
+        const { email, password } = req.body;
+        const users = await fs.readJson(usersPath);
+        const user = users.find(u => u.email === email && u.password === password);
+        
+        if (user) {
+            res.json({ 
+                token: "admin-token",
+                user: { id: user.id, email: user.email, role: user.role }
+            });
+        } else {
+            res.status(401).json({ error: "Invalid credentials" });
+        }
+    } catch (err) {
+        console.error("Login error:", err);
+        res.status(500).json({ error: "Login failed" });
     }
 });
 
-// Job routes
+// --------------------------
+// JOB ROUTES (PROTECTED)
+// --------------------------
+
+// GET all jobs
 app.get("/api/jobs", authMiddleware, async (req, res) => {
     try {
         const jobs = await fs.readJson(jobsPath);
@@ -66,6 +82,7 @@ app.get("/api/jobs", authMiddleware, async (req, res) => {
     }
 });
 
+// CREATE job
 app.post("/api/jobs", authMiddleware, async (req, res) => {
     try {
         const jobs = await fs.readJson(jobsPath);
@@ -84,6 +101,7 @@ app.post("/api/jobs", authMiddleware, async (req, res) => {
     }
 });
 
+// UPDATE job
 app.put("/api/jobs/:id", authMiddleware, async (req, res) => {
     try {
         const jobs = await fs.readJson(jobsPath);
@@ -102,6 +120,7 @@ app.put("/api/jobs/:id", authMiddleware, async (req, res) => {
     }
 });
 
+// DELETE job
 app.delete("/api/jobs/:id", authMiddleware, async (req, res) => {
     try {
         const jobs = await fs.readJson(jobsPath);
@@ -119,17 +138,20 @@ app.delete("/api/jobs/:id", authMiddleware, async (req, res) => {
     }
 });
 
-// Test
+// TEST endpoint
 app.get("/api/test", (req, res) => {
     res.json({ message: "Server is working" });
 });
 
-// Start
+// Initialize and start
 initDataFiles().then(() => {
-    const PORT = 5000;
+    const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
         console.log(`✅ Server running on port ${PORT}`);
         console.log(`🔐 Login: admin@example.com / admin123`);
-        console.log(`🔑 Fixed token: admin-token`);
+        console.log(`🔑 Token: admin-token`);
+        console.log(`📊 API: http://localhost:${PORT}/api/jobs`);
     });
+}).catch(err => {
+    console.error("Failed to initialize:", err);
 });
