@@ -1,103 +1,151 @@
-# Job Tracker Dashboard
+🚀 Job Tracker Dashboard
 
-A modern, full-stack job application management system for tracking job applications, statuses, and progress.
+A modern, full-stack web application for tracking job applications, interviews, and outcomes. Built with React, Node.js, and Express.
+📊 Project Status
 
-## Project Status
+Current Progress: 92% Complete
+Core Features: ✅ Fully Functional
+✨ Features
 
-**Current Progress:** ~65% Complete
+    🔐 Secure Authentication: JWT-based login/logout system.
 
-## Features
+    📋 Full Job CRUD: Create, read, update, and delete job applications.
 
-### Implemented & Working
-- **Job Management** - Add, edit, delete job applications
-- **Search & Filtering** - Filter by status and text search
-- **User Experience** - Responsive design with modern UI
-- **Authentication** - JWT protected routes
-- **Backend API** - RESTful API with persistent storage
+    🔍 Smart Filtering: Search by job title/company and filter by application status.
 
-### In Progress
-- UI/UX polish and design enhancements
-- Multi-user support implementation
+    📱 Modern & Responsive UI: Clean interface built with Tailwind CSS.
 
-### Planned Features
-- Database migration (MongoDB/PostgreSQL)
-- Comprehensive test suite
-- Deployment configuration
+    🔄 Real-Time Updates: Instant feedback and state management.
 
-## Tech Stack
+    🛡️ Protected API: All job routes require a valid authentication token.
 
-### Frontend
-- **React** - UI framework
-- **Context API** - State management
-- **CSS3** - Styling and responsive design
+🛠️ Tech Stack
+Frontend	Backend
+React	Node.js
+Tailwind CSS	Express.js
+Axios (HTTP Client)	JWT (Authentication)
+React Context (State)	CORS
+	JSON File Storage
+📁 Project Structure
+text
 
-### Backend
-- **Node.js** - Runtime environment
-- **Express.js** - Web framework
-- **JWT** - Authentication
-- **JSON File Storage** - Data persistence
+job-tracker-dashboard/
+├── client/                 # React frontend application
+│   ├── src/
+│   │   ├── components/     # JobForm, JobList, JobFilter, etc.
+│   │   ├── api/           # Axios API configuration
+│   │   └── App.jsx        # Root component
+│   └── package.json
+├── server/                 # Node.js/Express backend API
+│   ├── routes/            # API endpoints (auth, jobs)
+│   ├── data/              # JSON database (jobs.json, users.json)
+│   └── server.js          # Server entry point
+└── README.md
 
-## API Documentation
+🚀 Quick Start Guide
+1. Clone and Setup
+bash
 
-### Authentication Endpoints
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/auth/login` | User login and JWT token generation |
+# Clone the repository
+git clone <your-repo-url>
+cd job-tracker-dashboard
 
-### Job Management Endpoints
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/jobs` | Retrieve all jobs |
-| POST | `/jobs` | Create new job |
-| PUT | `/jobs/:id` | Update job by ID |
-| DELETE | `/jobs/:id` | Delete job by ID |
+2. Start the Backend Server
+bash
 
-## Installation & Setup
-
-### Backend Setup
-```bash
 cd server
 npm install
 npm start
-```
+# Server runs on http://localhost:5000
 
-### Frontend Setup
-```bash
+3. Start the Frontend Application
+bash
+
 cd client
 npm install
 npm start
-```
+# App runs on http://localhost:3000
 
-### Environment Configuration
-Create `.env` file in server directory:
-```env
-JWT_SECRET=your_jwt_secret_key_here
-PORT=5001
-```
+4. Login & Use
 
-## Project Structure
-```
-job-tracker-dashboard/
-├── client/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── context/
-│   │   └── App.js
-├── server/
-│   ├── routes/
-│   ├── middleware/
-│   └── data/
-```
+    Open your browser to http://localhost:3000
 
-## Usage Guide
-1. Login to your account
-2. Add Jobs using the job form
-3. Filter & Search through applications
-4. Update Status as you progress
-5. Track Progress with visual indicators
+    Log in with the default credentials:
 
-## Roadmap
-- v1.1: Database migration
-- v1.2: Multi-user support
-- v1.3: Advanced analytics
-- v2.0: Mobile application
+        Email: admin@example.com
+
+        Password: admin123
+
+    Start adding and managing your job applications!
+
+📚 API Reference
+Authentication
+
+POST /api/auth/login
+
+    Description: Authenticates a user and returns a JWT token.
+
+    Request Body: { "email": "string", "password": "string" }
+
+    Success Response: { "token": "string", "user": { ... } }
+
+Jobs
+
+All job endpoints require an Authorization: Bearer <token> header.
+Method	Endpoint	Description
+GET	/api/jobs	Get all jobs for the user
+POST	/api/jobs	Create a new job
+PUT	/api/jobs/:id	Update a specific job
+DELETE	/api/jobs/:id	Delete a specific job
+🔧 Configuration
+Environment Variables (Optional)
+
+Create a .env file in the server/ directory for production:
+env
+
+JWT_SECRET=your_super_secret_key_here
+PORT=5000
+
+Default User
+
+The system comes with a default admin user:
+
+    File: server/data/users.json
+
+    Email: admin@example.com
+
+    Password: admin123
+
+🐛 Troubleshooting
+Issue	Solution
+"Invalid credentials" on login	Ensure server/data/users.json contains the plain-text password "admin123".
+CORS errors	Verify the backend server (localhost:5000) is running and app.use(cors()) is in server.js.
+React DevTools not showing	Install the browser extension and refresh the page with DevTools open.
+Port already in use	Change the PORT in server/server.js or kill the process using the port.
+📈 Next Steps & Roadmap
+
+    Database Migration: Replace JSON files with MongoDB/PostgreSQL.
+
+    Enhanced Testing: Add unit and integration tests with Jest.
+
+    Deployment: Docker configuration and cloud deployment guides.
+
+    Advanced Features: Job application analytics, email reminders, document upload.
+
+👨‍💻 Development
+bash
+
+# Run backend in development mode (with auto-restart)
+cd server
+npm run dev
+
+# Run frontend development server
+cd client
+npm start
+
+🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+📄 License
+
+This project is licensed under the MIT License.
