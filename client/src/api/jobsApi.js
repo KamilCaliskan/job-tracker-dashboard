@@ -1,12 +1,13 @@
 import axios from "axios";
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
-// Create axios instance
+const API_URL = "http://localhost:5000/api"; // ADD /api
+
+// Create axios instance with default config
 const api = axios.create({
   baseURL: API_URL,
 });
 
-// Add token to requests
+// Add token to requests if available
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -15,11 +16,11 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Auth
+// Auth API
 export const login = (email, password) => 
   api.post("/auth/login", { email, password });
 
-// Jobs
+// Jobs API - NOTE: paths start with /jobs (not /api/jobs)
 export const getJobs = () => api.get("/jobs");
 export const addJob = (job) => api.post("/jobs", job);
 export const updateJob = (id, job) => api.put(`/jobs/${id}`, job);

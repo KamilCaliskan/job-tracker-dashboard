@@ -5,7 +5,8 @@ import JobFilter from "./components/JobFilter.jsx";
 import Pagination from "./components/Pagination.jsx";
 import Alert from "./components/ui/Alert.jsx";
 import LoginForm from "./components/LoginForm.jsx";
-import { getJobs, addJob, updateJob, deleteJob, login } from "./api/jobsApi.js";
+import { getJobs, addJob, updateJob, deleteJob } from "./api/jobsApi.js";
+import axios from "axios";
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
@@ -46,13 +47,45 @@ export default function App() {
   };
 
   const handleLogin = async (email, password) => {
+    console.log("✅ App.js: handleLogin CALLED with:", { email, password });
+
+    // SECURITY CHECK: Make sure we're not getting token instead of email
+    if (email === "admin-token" || email.includes("token")) {
+      console.error("❌ CRITICAL BUG: LoginForm is passing TOKEN as email!");
+      console.error("   Email parameter =", email);
+      console.error("   This means LoginForm.jsx has: onLogin(token) instead of onLogin(email, password)");
+      setError("BUG: LoginForm configured wrong. Check console.");
+      return;
+    }
+
+    if (!email || !password) {
+      console.error("❌ Email or password missing!");
+      setError("Email and password required");
+      return;
+    }
+
     try {
-      const res = await login(email, password);
-      setToken(res.data.token);
-      setUser(res.data.user);
+      console.log("🔄 Calling API with:", { email: email.substring(0, 10) + "..." });
+
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        { email, password }
+      );
+
+      console.log("✅ API Response:", response.data);
+
+      setToken(response.data.token);
+      setUser(response.data.user);
       setMessage("Login successful!");
+      setError(null);
+
     } catch (err) {
-      setError("Login failed. Check credentials.");
+      console.error("❌ API Error:", {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message
+      });
+      setError("Login failed. Check console for details.");
     }
   };
 
@@ -75,6 +108,7 @@ export default function App() {
       fetchJobs();
       setJob({ title: "", company: "", status: "Pending" });
     } catch (err) {
+      console.error("Save error:", err);
       setError("Save failed.");
     }
   };
@@ -85,6 +119,7 @@ export default function App() {
       setMessage("Job deleted.");
       fetchJobs();
     } catch (err) {
+      console.error("Delete error:", err);
       setError("Delete failed.");
     }
   };
@@ -92,7 +127,9 @@ export default function App() {
   // filtering
   const filtered = jobs.filter((j) => {
     const q = search.trim().toLowerCase();
-    const matchesSearch = !q || j.title.toLowerCase().includes(q) || j.company.toLowerCase().includes(q);
+    const matchesSearch = !q ||
+    (j.title && j.title.toLowerCase().includes(q)) ||
+    (j.company && j.company.toLowerCase().includes(q));
     const matchesStatus = !statusFilter || j.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -112,6 +149,13 @@ export default function App() {
       <LoginForm onLogin={handleLogin} />
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
       {message && <Alert type="success" message={message} onClose={() => setMessage(null)} />}
+
+      <div className="mt-4 text-sm text-gray-500 text-center">
+      <p className="font-semibold">Test Credentials:</p>
+      <p className="font-mono">Email: admin@example.com</p>
+      <p className="font-mono">Password: admin123</p>
+      <p className="mt-2 text-xs">Check browser console (F12) for debug info</p>
+      </div>
       </div>
       </div>
     );
@@ -125,7 +169,7 @@ export default function App() {
     <div>
     <h1 className="text-2xl font-semibold text-slate-800">Job Tracker Dashboard</h1>
     <p className="text-sm text-gray-500 mt-1">
-    Welcome, {user?.email || "User"} • {filtered.length} jobs
+    Welcome, {user?.email || "User"} • {filtered.length} jobs • Token: {token.substring(0, 15)}...
     </p>
     </div>
     <button
@@ -160,12 +204,15 @@ export default function App() {
     </div>
 
     <JobList jobs={currentJobs} onEdit={(j) => setJob(j)} onDelete={handleDelete} />
-    <Pagination
-    totalJobs={totalJobs}
-    jobsPerPage={jobsPerPage}
-    currentPage={currentPage}
-    setCurrentPage={setCurrentPage}
-    />
+
+    {totalJobs > jobsPerPage && (
+      <Pagination
+      totalJobs={totalJobs}
+      jobsPerPage={jobsPerPage}
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+      />
+    )}
     </div>
     </div>
     </div>
