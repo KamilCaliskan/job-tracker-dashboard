@@ -14,18 +14,18 @@ const usersPath = path.join(dataDir, "users.json");
 // Initialize data files
 async function initDataFiles() {
     await fs.ensureDir(dataDir);
-    
+
     // Create jobs.json if missing
     if (!(await fs.pathExists(jobsPath))) {
         await fs.writeJson(jobsPath, []);
     }
-    
-    // Create users.json with plain text password
+
+    // Create users.json with demo credentials
     if (!(await fs.pathExists(usersPath))) {
         const users = [{
             id: 1,
             email: "admin@example.com",
-            password: "admin123",  // PLAIN TEXT
+            password: "admin123",  // Plain text for demo
             role: "admin"
         }];
         await fs.writeJson(usersPath, users);
@@ -47,15 +47,15 @@ const authMiddleware = (req, res, next) => {
 // AUTH ROUTES
 // --------------------------
 
-// LOGIN (plain text comparison)
+// LOGIN
 app.post("/api/auth/login", async (req, res) => {
     try {
         const { email, password } = req.body;
         const users = await fs.readJson(usersPath);
         const user = users.find(u => u.email === email && u.password === password);
-        
+
         if (user) {
-            res.json({ 
+            res.json({
                 token: "admin-token",
                 user: { id: user.id, email: user.email, role: user.role }
             });
@@ -88,10 +88,10 @@ app.post("/api/jobs", authMiddleware, async (req, res) => {
         const jobs = await fs.readJson(jobsPath);
         const newJob = {
             id: Date.now(),
-            title: req.body.title || "",
-            company: req.body.company || "",
-            status: req.body.status || "Pending",
-            createdAt: new Date().toISOString()
+         title: req.body.title || "",
+         company: req.body.company || "",
+         status: req.body.status || "Pending",
+         createdAt: new Date().toISOString()
         };
         jobs.push(newJob);
         await fs.writeJson(jobsPath, jobs);
@@ -107,11 +107,11 @@ app.put("/api/jobs/:id", authMiddleware, async (req, res) => {
         const jobs = await fs.readJson(jobsPath);
         const jobId = parseInt(req.params.id);
         const index = jobs.findIndex(j => j.id === jobId);
-        
+
         if (index === -1) {
             return res.status(404).json({ error: "Job not found" });
         }
-        
+
         jobs[index] = { ...jobs[index], ...req.body };
         await fs.writeJson(jobsPath, jobs);
         res.json(jobs[index]);
@@ -126,11 +126,11 @@ app.delete("/api/jobs/:id", authMiddleware, async (req, res) => {
         const jobs = await fs.readJson(jobsPath);
         const jobId = parseInt(req.params.id);
         const filteredJobs = jobs.filter(j => j.id !== jobId);
-        
+
         if (filteredJobs.length === jobs.length) {
             return res.status(404).json({ error: "Job not found" });
         }
-        
+
         await fs.writeJson(jobsPath, filteredJobs);
         res.json({ message: "Job deleted successfully" });
     } catch (err) {
@@ -143,7 +143,10 @@ app.get("/api/test", (req, res) => {
     res.json({ message: "Server is working" });
 });
 
-// Initialize and start
+// --------------------------
+// SERVER START
+// --------------------------
+
 initDataFiles().then(() => {
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
@@ -151,6 +154,7 @@ initDataFiles().then(() => {
         console.log(`🔐 Login: admin@example.com / admin123`);
         console.log(`🔑 Token: admin-token`);
         console.log(`📊 API: http://localhost:${PORT}/api/jobs`);
+        console.log(`🚀 Ready for development!`);
     });
 }).catch(err => {
     console.error("Failed to initialize:", err);
